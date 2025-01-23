@@ -1,0 +1,73 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Load libraries
+
+```{r}
+library(RPostgres)
+library(RSQL) 
+library(tidyverse)
+library(DBI)
+library(RSQLite) #Optional
+```
+
+# Load data
+
+```{r}
+data("population")
+population
+
+data("who")
+who
+```
+
+# Create a database and add our data tables
+
+```{r}
+## Connect to a local database if needed
+# myDB <- "mySQLdata.db"
+# myconn <- dbConnect(drv = SQLite(), dbname= myDB)
+# dbListTables(myconn)
+
+# Connect to your PostgreSQL database
+# https://www.postgresql.org/account/
+con <- dbConnect(RPostgres::Postgres(), 
+                 host = "localhost", 
+                 port = 5432, 
+                 dbname = "mydatabase", 
+                 user = "yuxincui", 
+                 password = "ReplaceWithMyPassword")  # Required 
+con
+# Test the connection
+dbGetQuery(con, "SELECT NOW()")  
+
+# Write some data tables to the database.
+dbWriteTable(conn = con, 
+             name = "population",
+             value = population)
+dbWriteTable(conn = con, 
+             name = "who",
+             value = who)
+dbListTables(con)
+
+# SQL query example
+que1 <- dbGetQuery(con, "SELECT who.country, who.year, who.new_sp_m014, population.population 
+                FROM population, who 
+                WHERE who.country IN ('Afghanistan', 'Brazil') AND 
+                who.year > 1995 AND 
+                who.country = population.country AND 
+                who.year = population.year
+                ")
+que1
+
+# Statistical analysis
+## Plot
+que1 %>% ggplot()+
+  aes(x=year, y=population, colour = country)+
+  geom_line()+
+  theme_classic()
+
+```
+
